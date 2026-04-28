@@ -1,0 +1,78 @@
+// Import required packages
+// express → used to create the server
+const express = require('express');
+// cors → allows frontend (React) to communicate with backend
+const cors = require('cors');
+// mysql2 → used to connect Node.js with MySQL database
+const mysql = require('mysql2');
+// Create an Express application
+const app = express();
+// Define server port (default is 5000 if not provided)
+const PORT = 5000;
+// Enable CORS so frontend can access backend
+app.use(cors());
+// Enable JSON parsing (so server can read JSON data from requests)
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+// Create connection to MySQL database
+const db = mysql.createConnection({
+  host: 'localhost',     // database host (usually localhost)
+  user: 'root',          // MySQL username
+  password: '',          // MySQL password (empty if none)
+  database: 'users',   // database name
+});
+// Connect to the database
+db.connect((err) => {
+  // If connection fails, show error
+  if (err) {
+    console.error('Database connection failed:', err);
+    return;
+  }
+  // If successful, print success message
+  console.log('Connected to MySQL database successfully.');
+});
+// CREATE USER (REGISTER ROUTE)
+// This route handles POST request from frontend
+app.post('/register', (req, res) => {
+  // Extract name, email, and password from request body
+  const {name, email, password } = req.body;
+  // Validate input (check if empty)
+  if (!name || !email || !password) {
+    return res.status(400).json({
+      message: 'Name, email, and password are required'
+    });
+  }
+  // SQL query to insert new user into database
+  const sql ="INSERT INTO registration (name, email, password) VALUES (?, ?, ?)";
+  // Execute SQL query
+  // ? placeholders help prevent SQL injection
+  db.query(sql, [name, email, password], (err, result) => {
+    // Handle database errors
+    if (err) {
+      // Handle Error: If email already exists in the database (duplicate entry)
+      if (err.code === 'ER_DUP_ENTRY') {
+        return res.status(400).json({
+          message: 'Email already exists'
+        });
+      }
+      //Handle Error:any Other errors or Any other database issues 
+
+      return res.status(500).json({
+        message: 'Failed to create user',
+        error: err.message
+      });
+    }
+    // If successful, send response back to frontend
+    res.status(201).json({
+      message: 'User created successfully',
+      // insertId is the ID of newly created user
+      userId: result.insertId
+    });
+  });
+});
+// START SERVER
+// Server listens for incoming requests on defined port
+app.listen(PORT, () => {
+
+  console.log(`Server running on http://localhost:${PORT}`);
+});
