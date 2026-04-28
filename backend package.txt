@@ -1,0 +1,1 @@
+npm install cors dotenv express mongoose nodemon bcrypt mysql2 jsonwebtoken
